@@ -1,0 +1,1 @@
+pub const COLLATERAL_AMOUNT: u16 = 100;

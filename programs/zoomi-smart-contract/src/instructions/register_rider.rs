@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use crate::state::Rider;
 
 #[derive(Accounts)]
-pub struct InitializeRider<'info> {
+pub struct RegisterRider<'info> {
     #[account(mut)]
     pub rider: Signer<'info>,
     #[account(
@@ -15,8 +15,8 @@ pub struct InitializeRider<'info> {
     pub rider_account: Account<'info, Rider>,
     pub system_program: Program<'info, System>,
 }
-impl<'info> InitializeRider<'info> {
-    pub fn initialize_rider(&mut self, bumps: &InitializeRiderBumps) -> Result<()> {
+impl<'info> RegisterRider<'info> {
+    pub fn register_rider(&mut self, bumps: &RegisterRiderBumps) -> Result<()> {
         self.rider_account.set_inner(Rider {
             wallet: self.rider.key(),
             id_status: true,            // TODO: Validation from KYC of Gov app to be added in future

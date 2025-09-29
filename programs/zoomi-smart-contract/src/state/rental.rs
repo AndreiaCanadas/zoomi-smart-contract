@@ -5,8 +5,8 @@ use anchor_lang::prelude::*;
 pub struct Rental {
     pub rider: Pubkey,          // Rider wallet address
     pub scooter_id: u32,        // Scooter ID
-    pub start_time: i64,        // Start time of rental
-    pub end_time: i64,          // End time of rental
+    pub start_time: i64,        // Start time of rental (unix timestamp)
+    pub rental_period: u16,     // Rental period in hours
     pub total_amount: u16,      // Total amount in USDC (hourly rate * time + collateral amount)
     pub extra_time: u16,        // Extra time in hours
     pub status: RentalStatus,   // Rental status

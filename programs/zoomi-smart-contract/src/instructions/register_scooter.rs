@@ -2,22 +2,22 @@ use anchor_lang::prelude::*;
 use crate::state::{Scooter, ScooterStatus};
 
 #[derive(Accounts)]
-#[instruction(id: u32)]
-pub struct InitializeScooter<'info> {
+#[instruction(id: u32, shopkeeper_id: u32)]
+pub struct RegisterScooter<'info> {
     #[account(mut)]
     pub shopkeeper: Signer<'info>,
     #[account(
         init, 
         payer = shopkeeper, 
         space = 8 + Scooter::INIT_SPACE,
-        seeds = [b"scooter", shopkeeper.key().as_ref(), id.to_le_bytes().as_ref()],
+        seeds = [b"scooter", id.to_le_bytes().as_ref(), shopkeeper_id.to_le_bytes().as_ref()],
         bump,
     )]
     pub scooter_account: Account<'info, Scooter>,
     pub system_program: Program<'info, System>,
 }
-impl<'info> InitializeScooter<'info> {
-    pub fn initialize_scooter(&mut self, id: u32, shopkeeper_id: u32, hourly_rate: u16, bumps: &InitializeScooterBumps) -> Result<()> {
+impl<'info> RegisterScooter<'info> {
+    pub fn register_scooter(&mut self, id: u32, shopkeeper_id: u32, hourly_rate: u16, bumps: &RegisterScooterBumps) -> Result<()> {
         self.scooter_account.set_inner(Scooter {
             id,
             shopkeeper_id,

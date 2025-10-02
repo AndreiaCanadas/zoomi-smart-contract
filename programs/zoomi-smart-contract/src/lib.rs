@@ -1,3 +1,5 @@
+#![allow(deprecated, unexpected_cfgs)]
+
 use anchor_lang::prelude::*;
 
 mod state;
@@ -13,6 +15,8 @@ declare_id!("2j4NFfTwWjWukncAyLYLKo5GdrCY9f3xqiVNppzHuKMF");
 #[program]
 pub mod zoomi_smart_contract {
     use super::*;
+
+
 
     pub fn register_rider(ctx: Context<RegisterRider>) -> Result<()> {
         ctx.accounts.register_rider(&ctx.bumps)

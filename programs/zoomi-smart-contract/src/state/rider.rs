@@ -8,5 +8,5 @@ pub struct Rider {
     pub points: u32,           // Rider points
     pub penalties: u32,        // Rider penalties
     pub is_renting: bool,      // Renting status
-    pub bump: u8,               // Bump of the rider account
+    pub bump: u8,              // Bump of the rider account
 }

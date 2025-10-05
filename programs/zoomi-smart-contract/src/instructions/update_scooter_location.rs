@@ -4,10 +4,11 @@ use crate::state::Scooter;
 #[derive(Accounts)]
 pub struct UpdateScooterLocation<'info> {
     #[account(mut)]
-    pub scooter_device: Signer<'info>,  // TODO: How to make sure is the correct signer?
+    pub scooter_device: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"scooter", scooter_account.id.to_le_bytes().as_ref(), scooter_account.shopkeeper_id.to_le_bytes().as_ref()],
+        constraint = scooter_account.zoomi_device_pubkey == scooter_device.key(),
+        seeds = [b"scooter", scooter_account.zoomi_device_pubkey.as_ref()],
         bump = scooter_account.bump,
     )]
     pub scooter_account: Account<'info, Scooter>,

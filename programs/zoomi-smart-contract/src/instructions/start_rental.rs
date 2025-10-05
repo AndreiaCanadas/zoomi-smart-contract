@@ -1,14 +1,23 @@
 use anchor_lang::prelude::*;
-use crate::state::{Rental, Scooter, Rider, RentalStatus, Admin};
-use crate::constants::COLLATERAL_AMOUNT;
+use crate::state::{Rental, Scooter, Rider, RentalStatus, ScooterStatus};
+
+use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount}};
 
 #[derive(Accounts)]
 pub struct StartRental<'info> {
     #[account(mut)]
-    pub rider: Signer<'info>,
-    #[account(mut)]
+    pub rider: Signer<'info>,       // TBD: Will Rider be a signer ?? If not, how to make sure method is only called by backend or something when payment is confirmed ?
+    #[account(
+        seeds = [b"rider", rider.key().as_ref()],
+        bump = rider_account.bump,
+    )]
     pub rider_account: Account<'info, Rider>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = scooter_account.status == ScooterStatus::Available,
+        seeds = [b"scooter", scooter_account.zoomi_device_pubkey.as_ref()],
+        bump = scooter_account.bump,
+    )]
     pub scooter_account: Account<'info, Scooter>,
     #[account(
         init, 
@@ -18,24 +27,25 @@ pub struct StartRental<'info> {
         bump,
     )]
     pub rental_account: Account<'info, Rental>,
+
+    // TODO: Vault Account for USDC to be initialized in frontend ???? And total amount to be transferred in frontend ??
+    #[account(mut)]
+    pub mint_usdc: Account<'info, Mint>,
     #[account(
-        seeds = [b"zoomi", admin_account.admin.key().as_ref()],
-        bump = admin_account.bump,
+        init,
+        payer = rider,
+        associated_token::mint = mint_usdc,
+        associated_token::authority = rental_account,
     )]
-    pub admin_account: Account<'info, Admin>,
-    #[account(
-        seeds = [b"treasury", admin_account.key().as_ref()],
-        bump = admin_account.treasury_bump,
-    )]
-    pub treasury: SystemAccount<'info>,
+    pub vault: Account<'info, TokenAccount>,
+    pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+
     pub system_program: Program<'info, System>,
 }
 impl<'info> StartRental<'info> {
-    pub fn start_rental(&mut self, rental_period: u16, bumps: &StartRentalBumps) -> Result<()> {
-        let mut total_amount = rental_period * self.scooter_account.hourly_rate;
-        total_amount += total_amount * self.admin_account.fee as u16 / 100;
-        total_amount += COLLATERAL_AMOUNT;
-        
+    pub fn start_rental(&mut self, rental_period: u16, total_amount: u16, bumps: &StartRentalBumps) -> Result<()> {
+      
         self.rental_account.set_inner(Rental {
             rider: self.rider_account.key(),
             scooter_id: self.scooter_account.id,
@@ -46,6 +56,9 @@ impl<'info> StartRental<'info> {
             status: RentalStatus::Active,
             bump: bumps.rental_account,
         });
+
+        self.scooter_account.status = ScooterStatus::Rented;
+
         Ok(())
     }
 }

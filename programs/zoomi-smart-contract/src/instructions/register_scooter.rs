@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use crate::state::{Scooter, ScooterStatus};
 
 #[derive(Accounts)]
-#[instruction(id: u32, shopkeeper_id: u32)]
+#[instruction(zoomi_device_pubkey: Pubkey)]
 pub struct RegisterScooter<'info> {
     #[account(mut)]
     pub shopkeeper: Signer<'info>,
@@ -10,17 +10,18 @@ pub struct RegisterScooter<'info> {
         init, 
         payer = shopkeeper, 
         space = 8 + Scooter::INIT_SPACE,
-        seeds = [b"scooter", id.to_le_bytes().as_ref(), shopkeeper_id.to_le_bytes().as_ref()],
+        seeds = [b"scooter", zoomi_device_pubkey.as_ref()],
         bump,
     )]
     pub scooter_account: Account<'info, Scooter>,
     pub system_program: Program<'info, System>,
 }
 impl<'info> RegisterScooter<'info> {
-    pub fn register_scooter(&mut self, id: u32, shopkeeper_id: u32, hourly_rate: u16, bumps: &RegisterScooterBumps) -> Result<()> {
+    pub fn register_scooter(&mut self, zoomi_device_pubkey: Pubkey, id: u32, shopkeeper_id: u32, hourly_rate: u16, bumps: &RegisterScooterBumps) -> Result<()> {
         self.scooter_account.set_inner(Scooter {
             id,
             shopkeeper_id,
+            zoomi_device_pubkey,
             hourly_rate,
             status: ScooterStatus::Available,   // TODO: Initial status can be changed in future
             location_lat: 0,

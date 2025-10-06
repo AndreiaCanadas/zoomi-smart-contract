@@ -63,31 +63,37 @@ impl<'info> EndRental<'info> {
 
         
         // Transfer fee from vault to treasury
-        let mut fee = self.rental_account.total_amount - self.zoomi_account.collateral;
-        fee = fee * self.zoomi_account.fee as u16 / 100;
+        // let mut fee = self.rental_account.total_amount - self.zoomi_account.collateral;
+        // fee = fee * self.zoomi_account.fee as u16 / 100;
 
-        let cpi_program = self.system_program.to_account_info();
-        let cpi_accounts = TransferChecked {
-            from: self.vault.to_account_info(),
-            mint: self.mint_usdc.to_account_info(),
-            to: self.treasury.to_account_info(),
-            authority: self.rental_account.to_account_info(),
-        };
-        let signer_seeds: [&[&[u8]]; 1] = [&[
-            self.rider_account.to_account_info().key.as_ref(),
-            &self.scooter_account.to_account_info().key.as_ref(),
-            &[self.rental_account.bump],
-        ]];
-        let cpi_ctx = CpiContext::new_with_signer(
-            cpi_program,
-            cpi_accounts,
-            &signer_seeds,
-        );
-        transfer_checked(cpi_ctx, fee as u64, self.mint_usdc.decimals)?;
+        // let cpi_program = self.system_program.to_account_info();
+        // let cpi_accounts = TransferChecked {
+        //     from: self.vault.to_account_info(),
+        //     mint: self.mint_usdc.to_account_info(),
+        //     to: self.treasury.to_account_info(),
+        //     authority: self.rental_account.to_account_info(),
+        // };
+        // let signer_seeds: [&[&[u8]]; 1] = [&[
+        //     self.rider_account.to_account_info().key.as_ref(),
+        //     &self.scooter_account.to_account_info().key.as_ref(),
+        //     &[self.rental_account.bump],
+        // ]];
+        // let cpi_ctx = CpiContext::new_with_signer(
+        //     cpi_program,
+        //     cpi_accounts,
+        //     &signer_seeds,
+        // );
+        // transfer_checked(cpi_ctx, fee as u64, self.mint_usdc.decimals)?;
 
 
-        // Update scooter status
+        // Update scooter status (Status to be updated to Available in close rental account, called by shopkeeper)
         self.scooter_account.status = ScooterStatus::Maintenance;
+
+        // Update rider account (Points are to be updated in close rental account, called by shopkeeper)
+        self.rider_account.is_renting = false;
+
+        // Update rental account    (Shopkeeper to close rental account when everything is confirmed)
+        self.rental_account.status = RentalStatus::Completed;
 
         Ok(())
     }

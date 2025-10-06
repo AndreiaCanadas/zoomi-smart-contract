@@ -28,7 +28,7 @@ pub struct StartRental<'info> {
     )]
     pub rental_account: Account<'info, Rental>,
 
-    // TODO: Vault Account for USDC to be initialized in frontend ???? And total amount to be transferred in frontend ??
+    // TODO: Vault Account for USDC to be initialized in frontend ???? And total amount to be transferred in frontend ?? (Solana Pay ?)
     #[account(mut)]
     pub mint_usdc: Account<'info, Mint>,
     #[account(
@@ -46,18 +46,23 @@ pub struct StartRental<'info> {
 impl<'info> StartRental<'info> {
     pub fn start_rental(&mut self, rental_period: u16, total_amount: u16, bumps: &StartRentalBumps) -> Result<()> {
       
+        // Set rental account
         self.rental_account.set_inner(Rental {
-            rider: self.rider_account.key(),
+            rider: self.rider.key(),
             scooter_id: self.scooter_account.id,
             start_time: Clock::get()?.unix_timestamp,
             rental_period,
             total_amount,
-            extra_time: 0,
+            penalty_time: 0,
             status: RentalStatus::Active,
             bump: bumps.rental_account,
         });
 
+        // Update scooter account
         self.scooter_account.status = ScooterStatus::Rented;
+
+        // Update rider account
+        self.rider_account.is_renting = true;
 
         Ok(())
     }

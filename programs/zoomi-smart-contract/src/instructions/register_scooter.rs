@@ -23,7 +23,7 @@ impl<'info> RegisterScooter<'info> {
             shopkeeper_id,
             zoomi_device_pubkey,
             hourly_rate,
-            status: ScooterStatus::Available,   // TODO: Initial status can be changed in future
+            status: ScooterStatus::Available,
             location_lat: 0,
             location_long: 0,
             location_timestamp: 0,

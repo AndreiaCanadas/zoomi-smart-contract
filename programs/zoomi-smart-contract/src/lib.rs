@@ -52,5 +52,9 @@ pub mod zoomi_smart_contract {
         ctx.accounts.end_rental()
     }
 
+    pub fn close_rental(ctx: Context<CloseRental>) -> Result<()> {
+        ctx.accounts.close_rental()
+    }
+
 }
 

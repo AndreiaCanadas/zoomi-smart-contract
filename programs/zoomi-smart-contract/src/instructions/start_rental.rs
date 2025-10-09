@@ -40,7 +40,6 @@ pub struct StartRental<'info> {
     )]
     pub zoomi_account: Account<'info, Zoomi>,
 
-    // TODO: Vault Account for USDC to be initialized in frontend ???? And total amount to be transferred in frontend ?? (Solana Pay ?)
     #[account(mut)]
     pub mint_usdc: Account<'info, Mint>,
     #[account(

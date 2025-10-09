@@ -8,11 +8,14 @@ skip-lint = false
 [programs.localnet]
 zoomi_smart_contract = "2j4NFfTwWjWukncAyLYLKo5GdrCY9f3xqiVNppzHuKMF"
 
+[programs.devnet]
+zoomi_smart_contract = "2j4NFfTwWjWukncAyLYLKo5GdrCY9f3xqiVNppzHuKMF"
+
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

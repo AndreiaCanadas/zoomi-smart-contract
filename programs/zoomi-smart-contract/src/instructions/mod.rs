@@ -9,6 +9,9 @@ pub mod extend_rental_period;
 pub mod initialize_zoomi;
 pub mod close_rental;
 
+pub mod close_zoomi;
+pub use close_zoomi::*;
+
 pub use register_rider::*;
 pub use register_scooter::*;
 pub use start_rental::*;

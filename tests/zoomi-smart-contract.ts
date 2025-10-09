@@ -4,9 +4,7 @@ import { ZoomiSmartContract } from "../target/types/zoomi_smart_contract";
 import { ASSOCIATED_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 import {
   createMint,
-  MINT_SIZE,
   getAssociatedTokenAddressSync,
-  getMinimumBalanceForRentExemptMint,
   getOrCreateAssociatedTokenAccount,
   mintTo,
 } from "@solana/spl-token";
@@ -22,9 +20,6 @@ describe("zoomi-smart-contract", () => {
   const payer = provider.wallet as NodeWallet;
 
   const admin = Keypair.fromSecretKey(new Uint8Array(wallet));
-  
-  // Network configuration - change this to switch between networks
-  const NETWORK = 'localnet'; // 'localnet', 'devnet', or 'mainnet'
 
   const program = anchor.workspace.zoomiSmartContract as Program<ZoomiSmartContract>;
 
@@ -33,7 +28,6 @@ describe("zoomi-smart-contract", () => {
 
   // USDC Mint
   let mintUsdc: PublicKey;
-
   let adminUsdcAccount: PublicKey;
 
   // Zoomi Accounts
@@ -67,66 +61,43 @@ describe("zoomi-smart-contract", () => {
     return "Unknown";
   }
 
-  it('Setup USDC mint and ATAs based on network', async () => {
-    if (NETWORK === 'localnet') {
+  // Run only once to setup USDC mint and ATAs
+  xit('Setup USDC mint and ATAs (to test)', async () => {
 
-      // Airdrop SOL to admin account for localnet testing
-      const tx = await connection.requestAirdrop(admin.publicKey, 2 * LAMPORTS_PER_SOL);
-      await connection.confirmTransaction(tx);
-      console.log("Airdropped SOL to admin account:", admin.publicKey.toString());
-      console.log("Admin SOL balance: ", await provider.connection.getBalance(admin.publicKey));
-      
-      // Create a USDC-like mint
-      mintUsdc = await createMint(
-        connection,
-        payer.payer, // payer
-        admin.publicKey, // mint authority
-        null, // freeze authority (null = no freeze)
-        6 // decimals (same as real USDC)
-      );
-      
-      console.log("Created USDC-like mint for localnet:", mintUsdc.toString());
-      
-      // Create admin's USDC token account and mint some test tokens
-      adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
-        connection,
-        payer.payer,
-        mintUsdc,
-        admin.publicKey
-      );
-      
-      // Mint 1000 USDC to admin for testing (1000 * 10^6 = 1,000,000,000 micro-USDC)
-      await mintTo(
-        connection,
-        payer.payer,
-        mintUsdc,
-        adminUsdcAccount.address,
-        admin,
-        1000 * 10**6 // 1000 USDC
-      );
-      
-    } else if (NETWORK === 'devnet') {
-      // For devnet: Use the devnet USDC mint
-      mintUsdc = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
-      adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
-        connection,
-        payer.payer,
-        mintUsdc,
-        admin.publicKey
-      );
-      console.log("USDC mint (devnet):", mintUsdc.toString());
-      
-    } else if (NETWORK === 'mainnet') {
-      // For mainnet: Use the real USDC mint
-      mintUsdc = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-      adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
-        connection,
-        payer.payer,
-        mintUsdc,
-        admin.publicKey
-      );
-      console.log("USDC mint (mainnet):", mintUsdc.toString());
-    }
+    // Airdrop SOL to admin account for localnet testing
+    // const tx = await connection.requestAirdrop(admin.publicKey, 2 * LAMPORTS_PER_SOL);
+    // await connection.confirmTransaction(tx);
+    // console.log("Airdropped SOL to admin account:", admin.publicKey.toString());
+    // console.log("Admin SOL balance: ", await provider.connection.getBalance(admin.publicKey));
+    
+    // Create a USDC-like mint
+    mintUsdc = await createMint(
+      connection,
+      payer.payer, // payer
+      admin.publicKey, // mint authority
+      null, // freeze authority (null = no freeze)
+      6 // decimals (same as real USDC)
+    );
+    
+    console.log("Created USDC-like mint for localnet:", mintUsdc.toString());
+    
+    // Create admin's USDC token account and mint some test tokens
+    adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer.payer,
+      mintUsdc,
+      admin.publicKey
+    );
+    
+    // Mint 1000 USDC to admin for testing (1000 * 10^6 = 1,000,000,000 micro-USDC)
+    await mintTo(
+      connection,
+      payer.payer,
+      mintUsdc,
+      adminUsdcAccount.address,
+      admin,
+      1000 * 10**6 // 1000 USDC
+    );
 
     console.log("Admin USDC balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
     
@@ -137,7 +108,24 @@ describe("zoomi-smart-contract", () => {
     vault = getAssociatedTokenAddressSync(mintUsdc, rentalAccount, true);
   });
 
-  it("Initialize Zoomi", async () => {
+  // If mint was already created
+  it('Setup USDC mint and ATAs (to test)', async () => {
+    mintUsdc = new PublicKey("7DJoVBdHiG6H8KMryNZ8av6xiX8MM8erMh8VztwYaGFR");
+    adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      payer.payer,
+      mintUsdc,
+      admin.publicKey
+    );
+
+    // Calculate treasury ATA address
+    treasury = getAssociatedTokenAddressSync(mintUsdc, zoomiAccount, true);
+
+    // Calculate vault ATA address
+    vault = getAssociatedTokenAddressSync(mintUsdc, rentalAccount, true);
+  });
+
+  xit("Initialize Zoomi", async () => {
     // Add your test here.
     const tx = await program.methods.initializeZoomi(5, 100)
       .accountsPartial({
@@ -155,7 +143,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Register Scooter", async () => {
+  xit("Register Scooter", async () => {
     const tx = await program.methods.registerScooter(admin.publicKey, 1, 123, 2)
       .accountsPartial({
         shopkeeper: admin.publicKey,
@@ -174,7 +162,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Register Rider", async () => {
+  xit("Register Rider", async () => {
     const tx = await program.methods.registerRider()
       .accountsPartial({
         rider: admin.publicKey,
@@ -192,7 +180,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Start Rental", async () => {
+  xit("Start Rental", async () => {
     const tx = await program.methods.startRental(3)
       .accountsPartial({
         rider: admin.publicKey,
@@ -223,7 +211,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Extend Rental Period", async () => {
+  xit("Extend Rental Period", async () => {
     const tx = await program.methods.extendRentalPeriod(5)
       .accountsPartial({
         rider: admin.publicKey,
@@ -253,7 +241,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("End Rental", async () => {
+  xit("End Rental", async () => {
     const tx = await program.methods.endRental()
       .accountsPartial({
         rider: admin.publicKey,
@@ -283,7 +271,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Close Rental", async () => {
+  xit("Close Rental", async () => {
     const tx = await program.methods.closeRental()
       .accountsPartial({
         shopkeeper: admin.publicKey,
@@ -312,9 +300,40 @@ describe("zoomi-smart-contract", () => {
       console.log(" - Penalties:", riderAccountFetched.penalties.toString());
       console.log("Rider balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
       console.log("Treasury balance:", (await connection.getTokenAccountBalance(treasury)).value.amount);
-      
+
       console.log("Your transaction signature", tx);
 
+  });
+
+  xit("Close Zoomi", async () => {
+    const tx = await program.methods.closeZoomi()
+      .accountsPartial({
+        admin: admin.publicKey,
+        zoomiAccount,
+        mintUsdc,
+        treasury,
+        tokenProgram,
+        associatedTokenProgram,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+    console.log("Your transaction signature", tx);
+  });
+
+  xit("Update Scooter Location", async () => {
+    const tx = await program.methods.updateScooterLocation(1, 2)
+      .accountsPartial({
+        scooterDevice: admin.publicKey,
+        scooterAccount,
+      })
+      .signers([admin])
+      .rpc();
+
+      const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
+      console.log("\nScooter Account:", scooterAccount.toBase58());
+      console.log(" - Location: ", scooterAccountFetched.locationLat.toString(), scooterAccountFetched.locationLong.toString());
+      console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
   });
 
 });

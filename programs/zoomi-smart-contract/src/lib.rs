@@ -28,12 +28,12 @@ pub mod zoomi_smart_contract {
         ctx.accounts.register_scooter(zoomi_device_pubkey, id, shopkeeper_id, hourly_rate, &ctx.bumps)
     }
 
-    pub fn start_rental(ctx: Context<StartRental>, rental_period: u16, total_amount: u16) -> Result<()> {
-        ctx.accounts.start_rental(rental_period, total_amount, &ctx.bumps)
+    pub fn start_rental(ctx: Context<StartRental>, rental_period: u16) -> Result<()> {
+        ctx.accounts.start_rental(rental_period, &ctx.bumps)
     }
 
-    pub fn extend_rental_period(ctx: Context<ExtendRentalPeriod>, additional_rental_period: u16, additional_amount: u16) -> Result<()> {
-        ctx.accounts.extend_rental_period(additional_rental_period, additional_amount)
+    pub fn extend_rental_period(ctx: Context<ExtendRentalPeriod>, additional_rental_period: u16) -> Result<()> {
+        ctx.accounts.extend_rental_period(additional_rental_period)
     }
 
     pub fn update_scooter_location(ctx: Context<UpdateScooterLocation>, location_lat: i32, location_long: i32) -> Result<()> {

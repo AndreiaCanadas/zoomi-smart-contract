@@ -34,6 +34,8 @@ describe("zoomi-smart-contract", () => {
   // USDC Mint
   let mintUsdc: PublicKey;
 
+  let adminUsdcAccount: PublicKey;
+
   // Zoomi Accounts
   const zoomiAccount = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("zoomi"), admin.publicKey.toBuffer()], program.programId)[0];
   let treasury: PublicKey;
@@ -72,7 +74,7 @@ describe("zoomi-smart-contract", () => {
       const tx = await connection.requestAirdrop(admin.publicKey, 2 * LAMPORTS_PER_SOL);
       await connection.confirmTransaction(tx);
       console.log("Airdropped SOL to admin account:", admin.publicKey.toString());
-      console.log("Admin balance: ", await provider.connection.getBalance(admin.publicKey));
+      console.log("Admin SOL balance: ", await provider.connection.getBalance(admin.publicKey));
       
       // Create a USDC-like mint
       mintUsdc = await createMint(
@@ -86,12 +88,11 @@ describe("zoomi-smart-contract", () => {
       console.log("Created USDC-like mint for localnet:", mintUsdc.toString());
       
       // Create admin's USDC token account and mint some test tokens
-      const adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
+      adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
         connection,
         payer.payer,
         mintUsdc,
-        admin.publicKey,
-        true
+        admin.publicKey
       );
       
       // Mint 1000 USDC to admin for testing (1000 * 10^6 = 1,000,000,000 micro-USDC)
@@ -107,13 +108,27 @@ describe("zoomi-smart-contract", () => {
     } else if (NETWORK === 'devnet') {
       // For devnet: Use the devnet USDC mint
       mintUsdc = new PublicKey("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
-      console.log("Using devnet USDC mint:", mintUsdc.toString());
+      adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payer.payer,
+        mintUsdc,
+        admin.publicKey
+      );
+      console.log("USDC mint (devnet):", mintUsdc.toString());
       
     } else if (NETWORK === 'mainnet') {
       // For mainnet: Use the real USDC mint
       mintUsdc = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
-      console.log("Using mainnet USDC mint:", mintUsdc.toString());
+      adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        payer.payer,
+        mintUsdc,
+        admin.publicKey
+      );
+      console.log("USDC mint (mainnet):", mintUsdc.toString());
     }
+
+    console.log("Admin USDC balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
     
     // Calculate treasury ATA address
     treasury = getAssociatedTokenAddressSync(mintUsdc, zoomiAccount, true);
@@ -178,12 +193,14 @@ describe("zoomi-smart-contract", () => {
   });
 
   it("Start Rental", async () => {
-    const tx = await program.methods.startRental(1, 100)
+    const tx = await program.methods.startRental(3)
       .accountsPartial({
         rider: admin.publicKey,
+        riderUsdcAccount: adminUsdcAccount,
         riderAccount,
         scooterAccount,
         rentalAccount,
+        zoomiAccount,
         mintUsdc,
         vault,
         tokenProgram,
@@ -201,28 +218,38 @@ describe("zoomi-smart-contract", () => {
     console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
     console.log(" - Penalty Time:", rentalAccountFetched.penaltyTime.toString());
     console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
+    console.log("Vault balance:", (await connection.getTokenAccountBalance(vault)).value.amount);
+    console.log("Rider balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
     console.log("Your transaction signature", tx);
   });
 
   it("Extend Rental Period", async () => {
-    const tx = await program.methods.extendRentalPeriod(1, 100)
+    const tx = await program.methods.extendRentalPeriod(5)
       .accountsPartial({
         rider: admin.publicKey,
+        riderUsdcAccount: adminUsdcAccount,
         riderAccount,
         scooterAccount,
         rentalAccount,
+        zoomiAccount,
+        mintUsdc,
+        vault,
+        tokenProgram,
+        systemProgram: SystemProgram.programId,
       })
       .signers([admin])
       .rpc();
-      const rentalAccountFetched = await program.account.rental.fetch(rentalAccount);
-      console.log("\nRental Account:", rentalAccount.toBase58());
-      console.log(" - Rider:", rentalAccountFetched.rider.toBase58());
-      console.log(" - Scooter ID:", rentalAccountFetched.scooterId.toString());
-      console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
-      console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
-      console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-      console.log(" - Penalty Time:", rentalAccountFetched.penaltyTime.toString());
-      console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
+    const rentalAccountFetched = await program.account.rental.fetch(rentalAccount);
+    console.log("\nRental Account:", rentalAccount.toBase58());
+    console.log(" - Rider:", rentalAccountFetched.rider.toBase58());
+    console.log(" - Scooter ID:", rentalAccountFetched.scooterId.toString());
+    console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
+    console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
+    console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
+    console.log(" - Penalty Time:", rentalAccountFetched.penaltyTime.toString());
+    console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
+    console.log("Vault balance:", (await connection.getTokenAccountBalance(vault)).value.amount);
+    console.log("Rider balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
     console.log("Your transaction signature", tx);
   });
 
@@ -233,12 +260,6 @@ describe("zoomi-smart-contract", () => {
         riderAccount,
         scooterAccount,
         rentalAccount,
-        zoomiAccount,
-        mintUsdc,
-        vault,
-        treasury,
-        tokenProgram,
-        systemProgram: SystemProgram.programId,
       })
       .signers([admin])
       .rpc();
@@ -260,6 +281,40 @@ describe("zoomi-smart-contract", () => {
     console.log(" - Points:", riderAccountFetched.points.toString());
     console.log(" - Penalties:", riderAccountFetched.penalties.toString());
     console.log("Your transaction signature", tx);
+  });
+
+  it("Close Rental", async () => {
+    const tx = await program.methods.closeRental()
+      .accountsPartial({
+        shopkeeper: admin.publicKey,
+        zoomiAccount,
+        scooterAccount,
+        riderAccount,
+        riderUsdcAccount: adminUsdcAccount,
+        rider: admin.publicKey,
+        rentalAccount,
+        mintUsdc,
+        vault,
+        treasury,
+        tokenProgram,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+
+      const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
+      console.log("\nScooter Account:", scooterAccount.toBase58());
+      console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
+      const riderAccountFetched = await program.account.rider.fetch(riderAccount);
+      console.log("\nRider Account:", riderAccount.toBase58());
+      console.log(" - Is Renting:", riderAccountFetched.isRenting.toString());
+      console.log(" - Points:", riderAccountFetched.points.toString());
+      console.log(" - Penalties:", riderAccountFetched.penalties.toString());
+      console.log("Rider balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
+      console.log("Treasury balance:", (await connection.getTokenAccountBalance(treasury)).value.amount);
+      
+      console.log("Your transaction signature", tx);
+
   });
 
 });

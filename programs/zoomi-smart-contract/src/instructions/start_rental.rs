@@ -1,13 +1,20 @@
 use anchor_lang::prelude::*;
-use crate::state::{Rental, Scooter, Rider, RentalStatus, ScooterStatus};
+use crate::state::{Rental, Scooter, Rider, RentalStatus, ScooterStatus, Zoomi};
 
-use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount}};
+use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount, transfer_checked, TransferChecked}};
 
 #[derive(Accounts)]
 pub struct StartRental<'info> {
     #[account(mut)]
-    pub rider: Signer<'info>,       // TBD: Will Rider be a signer ?? If not, how to make sure method is only called by backend or something when payment is confirmed ?
+    pub rider: Signer<'info>,
     #[account(
+        mut,
+        associated_token::mint = mint_usdc,
+        associated_token::authority = rider,
+    )]
+    pub rider_ata: Account<'info, TokenAccount>,
+    #[account(
+        mut,
         seeds = [b"rider", rider.key().as_ref()],
         bump = rider_account.bump,
     )]
@@ -27,6 +34,11 @@ pub struct StartRental<'info> {
         bump,
     )]
     pub rental_account: Account<'info, Rental>,
+    #[account(
+        seeds = [b"zoomi", zoomi_account.admin.key().as_ref()],
+        bump = zoomi_account.bump,
+    )]
+    pub zoomi_account: Account<'info, Zoomi>,
 
     // TODO: Vault Account for USDC to be initialized in frontend ???? And total amount to be transferred in frontend ?? (Solana Pay ?)
     #[account(mut)]
@@ -44,7 +56,10 @@ pub struct StartRental<'info> {
     pub system_program: Program<'info, System>,
 }
 impl<'info> StartRental<'info> {
-    pub fn start_rental(&mut self, rental_period: u16, total_amount: u16, bumps: &StartRentalBumps) -> Result<()> {
+    pub fn start_rental(&mut self, rental_period: u16, bumps: &StartRentalBumps) -> Result<()> {
+
+        let mut total_amount = (rental_period * self.scooter_account.hourly_rate) * (1 + self.zoomi_account.fee as u16 / 100);
+        total_amount += self.zoomi_account.collateral;
       
         // Set rental account
         self.rental_account.set_inner(Rental {
@@ -63,6 +78,18 @@ impl<'info> StartRental<'info> {
 
         // Update rider account
         self.rider_account.is_renting = true;
+
+        // Transfer total amount from rider to vault
+        let cpi_program = self.system_program.to_account_info();
+        let cpi_accounts = TransferChecked {
+            from: self.rider_ata.to_account_info(),
+            mint: self.mint_usdc.to_account_info(),
+            to: self.vault.to_account_info(),
+            authority: self.rider.to_account_info(),
+        };
+        let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+
+        transfer_checked(cpi_ctx, self.rental_account.total_amount as u64, self.mint_usdc.decimals)?;
 
         Ok(())
     }

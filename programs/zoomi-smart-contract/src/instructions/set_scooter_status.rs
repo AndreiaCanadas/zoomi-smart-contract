@@ -7,7 +7,7 @@ pub struct SetScooterStatus<'info> {
     pub shopkeeper: Signer<'info>,
     #[account(
         mut,
-        seeds = [b"scooter", scooter_account.zoomi_device_pubkey.as_ref()],
+        seeds = [b"scooty", scooter_account.zoomi_device_pubkey.as_ref()],
         bump = scooter_account.bump,
     )]
     pub scooter_account: Account<'info, Scooter>,

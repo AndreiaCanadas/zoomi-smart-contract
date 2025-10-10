@@ -36,7 +36,7 @@ describe("zoomi-smart-contract", () => {
   
   // Scooter Accounts
   const zoomiDevicePubkey = admin.publicKey;
-  const scooterAccount = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("scooter"), zoomiDevicePubkey.toBuffer()], program.programId)[0];
+  const scooterAccount = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("scooty"), zoomiDevicePubkey.toBuffer()], program.programId)[0];
 
   // Rider Accounts
   const riderAccount = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("rider"), admin.publicKey.toBuffer()], program.programId)[0];
@@ -62,7 +62,7 @@ describe("zoomi-smart-contract", () => {
   }
 
   // Run only once to setup USDC mint and ATAs
-  xit('Setup USDC mint and ATAs (to test)', async () => {
+  xit('Create USDC mint and ATAs', async () => {
 
     // Airdrop SOL to admin account for localnet testing
     // const tx = await connection.requestAirdrop(admin.publicKey, 2 * LAMPORTS_PER_SOL);
@@ -109,7 +109,7 @@ describe("zoomi-smart-contract", () => {
   });
 
   // If mint was already created
-  it('Setup USDC mint and ATAs (to test)', async () => {
+  it('Setup USDC mint and ATAs', async () => {
     mintUsdc = new PublicKey("7DJoVBdHiG6H8KMryNZ8av6xiX8MM8erMh8VztwYaGFR");
     adminUsdcAccount = await getOrCreateAssociatedTokenAccount(
       connection,
@@ -143,7 +143,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  xit("Register Scooter", async () => {
+  it("Register Scooter", async () => {
     const tx = await program.methods.registerScooter(admin.publicKey, 1, 123, 2)
       .accountsPartial({
         shopkeeper: admin.publicKey,

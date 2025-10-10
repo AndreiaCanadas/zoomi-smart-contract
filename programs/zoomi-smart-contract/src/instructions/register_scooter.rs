@@ -10,7 +10,7 @@ pub struct RegisterScooter<'info> {
         init, 
         payer = shopkeeper, 
         space = 8 + Scooter::INIT_SPACE,
-        seeds = [b"scooter", zoomi_device_pubkey.as_ref()],
+        seeds = [b"scooty", zoomi_device_pubkey.as_ref()],
         bump,
     )]
     pub scooter_account: Account<'info, Scooter>,

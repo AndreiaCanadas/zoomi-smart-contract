@@ -14,7 +14,7 @@ pub struct EndRental<'info> {
     #[account(
         mut,
         constraint = scooter_account.status == ScooterStatus::Rented,
-        seeds = [b"scooter", scooter_account.zoomi_device_pubkey.as_ref()],
+        seeds = [b"scooty", scooter_account.zoomi_device_pubkey.as_ref()],
         bump = scooter_account.bump,
     )]
     pub scooter_account: Account<'info, Scooter>,

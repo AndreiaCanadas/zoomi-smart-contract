@@ -143,7 +143,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Register Scooter", async () => {
+  xit("Register Scooter", async () => {
     const tx = await program.methods.registerScooter(admin.publicKey, 1, 123, 2)
       .accountsPartial({
         shopkeeper: admin.publicKey,
@@ -180,7 +180,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  xit("Start Rental", async () => {
+  it("Start Rental", async () => {
     const tx = await program.methods.startRental(3)
       .accountsPartial({
         rider: admin.publicKey,

@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use crate::state::{Rental, Scooter, Rider, RentalStatus, ScooterStatus, Zoomi};
+use crate::events::ScooterUnlocked;
 
 use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount, transfer_checked, TransferChecked}};
 
@@ -89,6 +90,11 @@ impl<'info> StartRental<'info> {
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
         transfer_checked(cpi_ctx, self.rental_account.total_amount as u64, self.mint_usdc.decimals)?;
+
+        emit!(ScooterUnlocked {
+            zoomi_device_pubkey: self.scooter_account.zoomi_device_pubkey,
+            rental_duration: self.rental_account.rental_period,
+        });
 
         Ok(())
     }

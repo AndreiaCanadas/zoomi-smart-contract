@@ -6,6 +6,7 @@ mod state;
 mod instructions;
 mod constants;
 mod errors;
+mod events;
 
 use instructions::*;
 use state::ScooterStatus;

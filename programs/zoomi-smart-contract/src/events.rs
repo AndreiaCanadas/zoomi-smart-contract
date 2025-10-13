@@ -11,3 +11,8 @@ pub struct RentalExtended {
     pub zoomi_device_pubkey: Pubkey,
     pub additional_rental_period: u16,
 }
+
+#[event]
+pub struct RentalEnded {
+    pub zoomi_device_pubkey: Pubkey,
+}

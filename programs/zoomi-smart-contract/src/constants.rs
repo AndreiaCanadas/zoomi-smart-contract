@@ -1,0 +1,1 @@
+pub const SECONDS_IN_HOUR: u16 = 3600;

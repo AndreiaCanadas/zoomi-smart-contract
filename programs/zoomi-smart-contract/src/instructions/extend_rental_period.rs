@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
 use crate::state::{Rental, Rider, Scooter, Zoomi};
 use anchor_spl::token::{Mint, Token, TokenAccount, transfer_checked, TransferChecked};
+use crate::events::RentalExtended;
 
 #[derive(Accounts)]
 pub struct ExtendRentalPeriod<'info> {
@@ -49,7 +50,7 @@ pub struct ExtendRentalPeriod<'info> {
 impl<'info> ExtendRentalPeriod<'info> {
     pub fn extend_rental_period(&mut self, additional_rental_period: u16) -> Result<()> {
 
-        let additional_amount = (additional_rental_period * self.scooter_account.hourly_rate) * (1 + self.zoomi_account.fee as u16 / 100);
+        let additional_amount = (additional_rental_period * self.scooter_account.hourly_rate) * (100 + self.zoomi_account.fee as u16) / 100;
 
         // Update rental period
         self.rental_account.rental_period += additional_rental_period;
@@ -70,6 +71,10 @@ impl<'info> ExtendRentalPeriod<'info> {
 
         transfer_checked(cpi_ctx, additional_amount as u64, self.mint_usdc.decimals)?;
 
+        emit!(RentalExtended {
+            zoomi_device_pubkey: self.scooter_account.zoomi_device_pubkey,
+            additional_rental_period,
+        });
 
         Ok(())
     }

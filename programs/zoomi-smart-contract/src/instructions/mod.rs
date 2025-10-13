@@ -8,6 +8,7 @@ pub mod end_rental;
 pub mod extend_rental_period;
 pub mod initialize_zoomi;
 pub mod close_rental;
+pub mod close_rental_test;
 
 pub mod close_zoomi;
 pub use close_zoomi::*;
@@ -22,3 +23,4 @@ pub use end_rental::*;
 pub use extend_rental_period::*;
 pub use initialize_zoomi::*;
 pub use close_rental::*;
+pub use close_rental_test::*;

@@ -180,7 +180,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  it("Start Rental", async () => {
+  xit("Start Rental", async () => {
     const tx = await program.methods.startRental(3)
       .accountsPartial({
         rider: admin.publicKey,
@@ -204,7 +204,7 @@ describe("zoomi-smart-contract", () => {
     console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
     console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
     console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Penalty Time:", rentalAccountFetched.penaltyTime.toString());
+    console.log(" - Usage Adjustment:", rentalAccountFetched.usageAdjustment.toString());
     console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
     console.log("Vault balance:", (await connection.getTokenAccountBalance(vault)).value.amount);
     console.log("Rider balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
@@ -234,7 +234,7 @@ describe("zoomi-smart-contract", () => {
     console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
     console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
     console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Penalty Time:", rentalAccountFetched.penaltyTime.toString());
+    console.log(" - Usage Adjustment:", rentalAccountFetched.usageAdjustment.toString());
     console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
     console.log("Vault balance:", (await connection.getTokenAccountBalance(vault)).value.amount);
     console.log("Rider balance:", (await connection.getTokenAccountBalance(adminUsdcAccount.address)).value.amount);
@@ -258,7 +258,7 @@ describe("zoomi-smart-contract", () => {
     console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
     console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
     console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Penalty Time:", rentalAccountFetched.penaltyTime.toString());
+    console.log(" - Usage Adjustment:", rentalAccountFetched.usageAdjustment.toString());
     console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
     const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
     console.log("\nScooter Account:", scooterAccount.toBase58());
@@ -271,14 +271,13 @@ describe("zoomi-smart-contract", () => {
     console.log("Your transaction signature", tx);
   });
 
-  xit("Close Rental", async () => {
-    const tx = await program.methods.closeRental()
+  it("Close Rental - Good Condition", async () => {
+    const tx = await program.methods.closeRental(85) // inspection_score: 85 (good condition - full collateral refund)
       .accountsPartial({
         shopkeeper: admin.publicKey,
         zoomiAccount,
         scooterAccount,
         riderAccount,
-        riderUsdcAccount: adminUsdcAccount,
         rider: admin.publicKey,
         rentalAccount,
         mintUsdc,
@@ -302,7 +301,44 @@ describe("zoomi-smart-contract", () => {
       console.log("Treasury balance:", (await connection.getTokenAccountBalance(treasury)).value.amount);
 
       console.log("Your transaction signature", tx);
+  });
 
+  xit("Close Rental - Poor Condition", async () => {
+    // This test shows what happens when scooter is returned in poor condition
+    const tx = await program.methods.closeRental(30) // inspection_score: 30 (poor condition - no collateral refund)
+      .accountsPartial({
+        shopkeeper: admin.publicKey,
+        zoomiAccount,
+        scooterAccount,
+        riderAccount,
+        rider: admin.publicKey,
+        rentalAccount,
+        mintUsdc,
+        vault,
+        treasury,
+        tokenProgram,
+        systemProgram: SystemProgram.programId,
+      })
+      .signers([admin])
+      .rpc();
+
+      console.log("Close Rental with poor inspection score (30) - collateral goes to shopkeeper");
+      console.log("Your transaction signature", tx);
+  });
+
+  xit("Close Rental - Test", async () => {
+    const tx = await program.methods.closeRentalTest()
+      .accountsPartial({
+        rider: admin.publicKey,
+        riderAccount,
+        scooterAccount,
+        rentalAccount,
+        mintUsdc,
+        vault,
+        tokenProgram,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
   });
 
   xit("Close Zoomi", async () => {

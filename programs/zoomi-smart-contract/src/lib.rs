@@ -53,8 +53,13 @@ pub mod zoomi_smart_contract {
         ctx.accounts.end_rental()
     }
 
-    pub fn close_rental(ctx: Context<CloseRental>) -> Result<()> {
-        ctx.accounts.close_rental()
+    pub fn close_rental(ctx: Context<CloseRental>, inspection_score: u8) -> Result<()> {
+        ctx.accounts.close_rental(inspection_score)
+    }
+
+    // For testing purposes only
+    pub fn close_rental_test(ctx: Context<CloseRentalTest>) -> Result<()> {
+        ctx.accounts.close_rental_test()
     }
 
     // For testing purposes only

@@ -8,7 +8,7 @@ pub struct Rental {
     pub start_time: i64,        // Start time of rental (unix timestamp)
     pub rental_period: u16,     // Rental period in hours
     pub total_amount: u16,      // Total amount in USDC (hourly rate * time + collateral amount)
-    pub penalty_time: u16,      // Penalty time in hours
+    pub usage_adjustment: i16,  // Hours difference: negative = refund needed, positive = penalty applied
     pub status: RentalStatus,   // Rental status
     pub bump: u8,               // Bump of the rental account
 }

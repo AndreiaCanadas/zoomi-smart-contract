@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 use crate::state::Zoomi;
-use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount}};
+use anchor_spl::{associated_token::AssociatedToken, token::{Mint, Token, TokenAccount, close_account, CloseAccount}};
 
 #[derive(Accounts)]
 pub struct CloseZoomi<'info> {
@@ -30,6 +30,23 @@ pub struct CloseZoomi<'info> {
 }
 impl<'info> CloseZoomi<'info> {
     pub fn close_zoomi(&mut self) -> Result<()> {
+
+        let cpi_program = self.token_program.to_account_info();
+        // Signer seeds for vault transfers
+        let signer_seeds: [&[&[u8]]; 1] = [&[
+            b"zoomi",
+            self.admin.to_account_info().key.as_ref(),
+            &[self.zoomi_account.bump],
+        ]];
+
+        // close treasury account
+        let close_accounts = CloseAccount {
+            account: self.treasury.to_account_info(),
+            destination: self.admin.to_account_info(),
+            authority: self.zoomi_account.to_account_info(),
+        };
+        let close_ctx = CpiContext::new_with_signer(cpi_program, close_accounts, &signer_seeds);
+        close_account(close_ctx)?;
         
         Ok(())
     }

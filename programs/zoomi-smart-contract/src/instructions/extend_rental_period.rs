@@ -50,7 +50,10 @@ pub struct ExtendRentalPeriod<'info> {
 impl<'info> ExtendRentalPeriod<'info> {
     pub fn extend_rental_period(&mut self, additional_rental_period: u16) -> Result<()> {
 
-        let additional_amount = (additional_rental_period * self.scooter_account.hourly_rate) * (100 + self.zoomi_account.fee as u16) / 100;
+        let hourly_rate = self.scooter_account.hourly_rate * additional_rental_period as u64;   // Rental amount for the period in USDC
+        let protocol_fee = self.zoomi_account.protocol_fee;                               // Protocol fee in %
+
+        let additional_amount = hourly_rate * (100 + protocol_fee as u64) / 100;
 
         // Update rental period
         self.rental_account.rental_period += additional_rental_period;

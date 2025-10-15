@@ -9,7 +9,7 @@ skip-lint = false
 zoomi_smart_contract = "2j4NFfTwWjWukncAyLYLKo5GdrCY9f3xqiVNppzHuKMF"
 
 [programs.devnet]
-zoomi_smart_contract = "2j4NFfTwWjWukncAyLYLKo5GdrCY9f3xqiVNppzHuKMF"
+zoomi_smart_contract = "C3fDBNS8FdQTR6XYkMk2dYH1YgZgy5R7tj7jANs34gfA"
 
 [registry]
 url = "https://api.apr.dev"

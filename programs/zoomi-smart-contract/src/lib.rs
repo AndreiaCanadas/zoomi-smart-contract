@@ -11,21 +11,21 @@ mod events;
 use instructions::*;
 use state::ScooterStatus;
 
-declare_id!("2j4NFfTwWjWukncAyLYLKo5GdrCY9f3xqiVNppzHuKMF");
+declare_id!("C3fDBNS8FdQTR6XYkMk2dYH1YgZgy5R7tj7jANs34gfA");
 
 #[program]
 pub mod zoomi_smart_contract {
     use super::*;
 
-    pub fn initialize_zoomi(ctx: Context<InitializeZoomi>, fee: u8, collateral: u16) -> Result<()> {
-        ctx.accounts.initialize_zoomi(fee, collateral, &ctx.bumps)
+    pub fn initialize_zoomi(ctx: Context<InitializeZoomi>, protocol_fee: u8, base_rate: u64, collateral: u64) -> Result<()> {
+        ctx.accounts.initialize_zoomi(protocol_fee, base_rate, collateral, &ctx.bumps)
     }
 
     pub fn register_rider(ctx: Context<RegisterRider>) -> Result<()> {
         ctx.accounts.register_rider(&ctx.bumps)
     }
 
-    pub fn register_scooter(ctx: Context<RegisterScooter>, zoomi_device_pubkey: Pubkey, id: u32, shopkeeper_id: u32, hourly_rate: u16) -> Result<()> {
+    pub fn register_scooter(ctx: Context<RegisterScooter>, zoomi_device_pubkey: Pubkey, id: u32, shopkeeper_id: u32, hourly_rate: u64) -> Result<()> {
         ctx.accounts.register_scooter(zoomi_device_pubkey, id, shopkeeper_id, hourly_rate, &ctx.bumps)
     }
 
@@ -49,8 +49,8 @@ pub mod zoomi_smart_contract {
         ctx.accounts.update_scooter_status(status)
     }
 
-    pub fn end_rental(ctx: Context<EndRental>) -> Result<()> {
-        ctx.accounts.end_rental()
+    pub fn return_scooter(ctx: Context<ReturnScooter>) -> Result<()> {
+        ctx.accounts.return_scooter()
     }
 
     pub fn close_rental(ctx: Context<CloseRental>, inspection_score: u8) -> Result<()> {

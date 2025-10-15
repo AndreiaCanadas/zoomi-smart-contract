@@ -4,7 +4,7 @@ pub mod start_rental;
 pub mod update_scooter_location;
 pub mod set_scooter_status;         // Scooter Status updated by Shopkeeper
 pub mod update_scooter_status;      // Scooter Status updated by Scooter Device
-pub mod end_rental;
+pub mod return_scooter;
 pub mod extend_rental_period;
 pub mod initialize_zoomi;
 pub mod close_rental;
@@ -19,7 +19,7 @@ pub use start_rental::*;
 pub use update_scooter_location::*;
 pub use set_scooter_status::*;
 pub use update_scooter_status::*;
-pub use end_rental::*;
+pub use return_scooter::*;
 pub use extend_rental_period::*;
 pub use initialize_zoomi::*;
 pub use close_rental::*;

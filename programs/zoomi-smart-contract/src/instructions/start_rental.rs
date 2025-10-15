@@ -58,8 +58,13 @@ pub struct StartRental<'info> {
 impl<'info> StartRental<'info> {
     pub fn start_rental(&mut self, rental_period: u16, bumps: &StartRentalBumps) -> Result<()> {
 
-        let mut total_amount = (rental_period * self.scooter_account.hourly_rate) * (100 + self.zoomi_account.fee as u16) / 100;
-        total_amount += self.zoomi_account.collateral;
+        let base_rate = self.zoomi_account.base_rate;                         // Base amount in USDC
+        let hourly_rate = self.scooter_account.hourly_rate * rental_period as u64;   // Rental amount for the period in USDC
+        let protocol_fee = self.zoomi_account.protocol_fee;                    // Protocol fee in %
+        let collateral = self.zoomi_account.collateral;                       // Collateral in USDC
+
+        let mut total_amount = (base_rate + hourly_rate) * (100 + protocol_fee as u64) / 100;
+        total_amount += collateral;
       
         // Set rental account
         self.rental_account.set_inner(Rental {
@@ -68,7 +73,6 @@ impl<'info> StartRental<'info> {
             start_time: Clock::get()?.unix_timestamp,
             rental_period,
             total_amount,
-            usage_adjustment: 0,
             status: RentalStatus::Active,
             bump: bumps.rental_account,
         });

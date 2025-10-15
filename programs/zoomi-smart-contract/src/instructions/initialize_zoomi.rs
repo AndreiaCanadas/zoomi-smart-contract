@@ -19,7 +19,7 @@ pub struct InitializeZoomi<'info> {
     #[account(mut)]
     pub mint_usdc: Account<'info, Mint>,
     #[account(
-        init,
+        init_if_needed,
         payer = admin,
         associated_token::mint = mint_usdc,
         associated_token::authority = zoomi_account,
@@ -31,11 +31,12 @@ pub struct InitializeZoomi<'info> {
     pub system_program: Program<'info, System>,
 }
 impl<'info> InitializeZoomi<'info> {
-    pub fn initialize_zoomi(&mut self, fee: u8, collateral: u16, bumps: &InitializeZoomiBumps) -> Result<()> {
+    pub fn initialize_zoomi(&mut self, protocol_fee: u8, base_rate: u64, collateral: u64, bumps: &InitializeZoomiBumps) -> Result<()> {
         self.zoomi_account.set_inner(Zoomi { 
             admin: self.admin.key(),
             treasury: self.treasury.key(),      // TODO: Does it make sense to save the treasury account here ??
-            fee,
+            protocol_fee,
+            base_rate,
             collateral,
             bump: bumps.zoomi_account,
         });

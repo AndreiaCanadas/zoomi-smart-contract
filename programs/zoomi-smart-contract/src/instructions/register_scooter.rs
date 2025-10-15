@@ -17,7 +17,7 @@ pub struct RegisterScooter<'info> {
     pub system_program: Program<'info, System>,
 }
 impl<'info> RegisterScooter<'info> {
-    pub fn register_scooter(&mut self, zoomi_device_pubkey: Pubkey, id: u32, shopkeeper_id: u32, hourly_rate: u16, bumps: &RegisterScooterBumps) -> Result<()> {
+    pub fn register_scooter(&mut self, zoomi_device_pubkey: Pubkey, id: u32, shopkeeper_id: u32, hourly_rate: u64, bumps: &RegisterScooterBumps) -> Result<()> {
         self.scooter_account.set_inner(Scooter {
             id,
             shopkeeper_id,

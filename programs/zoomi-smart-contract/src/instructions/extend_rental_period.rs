@@ -58,11 +58,11 @@ impl<'info> ExtendRentalPeriod<'info> {
         // Update rental period
         self.rental_account.rental_period += additional_rental_period;
         
-        // Update total amount
-        self.rental_account.total_amount += additional_amount;
+        // Update rental amount
+        self.rental_account.rental_amount += additional_amount;
 
 
-        // Transfer total amount from rider to vault
+        // Transfer rental amount from rider to vault
         let cpi_program = self.system_program.to_account_info();
         let cpi_accounts = TransferChecked {
             from: self.rider_ata.to_account_info(),
@@ -72,7 +72,7 @@ impl<'info> ExtendRentalPeriod<'info> {
         };
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
-        transfer_checked(cpi_ctx, additional_amount as u64, self.mint_usdc.decimals)?;
+        transfer_checked(cpi_ctx, additional_amount, self.mint_usdc.decimals)?;
 
         emit!(RentalExtended {
             zoomi_device_pubkey: self.scooter_account.zoomi_device_pubkey,

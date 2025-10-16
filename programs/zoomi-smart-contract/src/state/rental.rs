@@ -7,7 +7,7 @@ pub struct Rental {
     pub scooter_id: u32,        // Scooter ID
     pub start_time: i64,        // Start time of rental (unix timestamp)
     pub rental_period: u16,     // Rental period in hours
-    pub total_amount: u64,      // Total amount in USDC (base rate + hourly rate * time + collateral + protocol fee)
+    pub rental_amount: u64,      // Rental amount in USDC (base rate + hourly rate * time) (collateral and protocol fees excluded)
     pub status: RentalStatus,   // Rental status
     pub bump: u8,               // Bump of the rental account
 }

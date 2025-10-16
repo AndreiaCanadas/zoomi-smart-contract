@@ -58,13 +58,13 @@ pub struct StartRental<'info> {
 impl<'info> StartRental<'info> {
     pub fn start_rental(&mut self, rental_period: u16, bumps: &StartRentalBumps) -> Result<()> {
 
-        let base_rate = self.zoomi_account.base_rate;                         // Base amount in USDC
+        let base_rate = self.zoomi_account.base_rate;                                // Base amount in USDC
         let hourly_rate = self.scooter_account.hourly_rate * rental_period as u64;   // Rental amount for the period in USDC
-        let protocol_fee = self.zoomi_account.protocol_fee;                    // Protocol fee in %
-        let collateral = self.zoomi_account.collateral;                       // Collateral in USDC
+        let collateral = self.zoomi_account.collateral;                              // Collateral in USDC
 
-        let mut total_amount = (base_rate + hourly_rate) * (100 + protocol_fee as u64) / 100;
-        total_amount += collateral;
+        let rental_amount = base_rate + hourly_rate;
+        let protocol_fee_amount = rental_amount * self.zoomi_account.protocol_fee as u64 / 100u64;
+        let total_amount = rental_amount + protocol_fee_amount + collateral;
       
         // Set rental account
         self.rental_account.set_inner(Rental {
@@ -72,7 +72,7 @@ impl<'info> StartRental<'info> {
             scooter_id: self.scooter_account.id,
             start_time: Clock::get()?.unix_timestamp,
             rental_period,
-            total_amount,
+            rental_amount,
             status: RentalStatus::Active,
             bump: bumps.rental_account,
         });
@@ -93,7 +93,7 @@ impl<'info> StartRental<'info> {
         };
         let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
 
-        transfer_checked(cpi_ctx, self.rental_account.total_amount as u64, self.mint_usdc.decimals)?;
+        transfer_checked(cpi_ctx, total_amount, self.mint_usdc.decimals)?;
 
         emit!(ScooterUnlocked {
             zoomi_device_pubkey: self.scooter_account.zoomi_device_pubkey,

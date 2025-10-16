@@ -68,24 +68,12 @@ pub struct CloseRental<'info> {
     pub system_program: Program<'info, System>,
 }
 impl<'info> CloseRental<'info> {
-    pub fn close_rental(&mut self, inspection_score: u8) -> Result<()> {
+    pub fn close_rental(&mut self, scooter_ok: bool) -> Result<()> {
         
-        // Get remaining amount in vault (whatever collateral remains after return_scooter)
+        // Get remaining amount in vault (collateral remaining after return_scooter)
         let vault_balance = self.vault.amount;
         
-        // Distribute remaining vault balance based on inspection score
-        // 80-100: Full remaining amount to rider
-        // 50-79: Proportional split based on score
-        // 0-49: All remaining amount to shopkeeper
-        let collateral_to_rider = if inspection_score >= 80 {
-            vault_balance as u16
-        } else if inspection_score >= 50 {
-            // Linear scale: 50 = 0%, 79 = 96.67%
-            ((vault_balance as u16) * (inspection_score - 50) as u16) / 30
-        } else {
-            0
-        };
-        let collateral_to_shopkeeper = (vault_balance as u16) - collateral_to_rider;
+        // Tranfer vault balance based on scooter status
 
         // Signer seeds for vault transfers
         let signer_seeds: [&[&[u8]]; 1] = [&[
@@ -96,24 +84,8 @@ impl<'info> CloseRental<'info> {
 
         let cpi_program = self.token_program.to_account_info();
 
-        // Transfer collateral portion to shopkeeper
-        if collateral_to_shopkeeper > 0 {
-            let transfer_shopkeeper_accounts = TransferChecked {
-                from: self.vault.to_account_info(),
-                mint: self.mint_usdc.to_account_info(),
-                to: self.shopkeeper_ata.to_account_info(),
-                authority: self.rental_account.to_account_info(),
-            };
-            let transfer_shopkeeper_ctx = CpiContext::new_with_signer(
-                cpi_program.clone(),
-                transfer_shopkeeper_accounts,
-                &signer_seeds
-            );
-            transfer_checked(transfer_shopkeeper_ctx, collateral_to_shopkeeper as u64, self.mint_usdc.decimals)?;
-        }
-
-        // Transfer remaining collateral to rider
-        if collateral_to_rider > 0 {
+        // OK (true): All collateral to rider
+        if scooter_ok {
             let transfer_rider_accounts = TransferChecked {
                 from: self.vault.to_account_info(),
                 mint: self.mint_usdc.to_account_info(),
@@ -125,7 +97,21 @@ impl<'info> CloseRental<'info> {
                 transfer_rider_accounts,
                 &signer_seeds
             );
-            transfer_checked(transfer_rider_ctx, collateral_to_rider as u64, self.mint_usdc.decimals)?;
+            transfer_checked(transfer_rider_ctx, vault_balance, self.mint_usdc.decimals)?;
+        }else{
+            // NOK (false): All collateral to shopkeeper
+            let transfer_shopkeeper_accounts = TransferChecked {
+                from: self.vault.to_account_info(),
+                mint: self.mint_usdc.to_account_info(),
+                to: self.shopkeeper_ata.to_account_info(),
+                authority: self.rental_account.to_account_info(),
+            };
+            let transfer_shopkeeper_ctx = CpiContext::new_with_signer(
+                cpi_program.clone(),
+                transfer_shopkeeper_accounts,
+                &signer_seeds
+            );
+            transfer_checked(transfer_shopkeeper_ctx, vault_balance, self.mint_usdc.decimals)?;
         }
 
         // Close vault account

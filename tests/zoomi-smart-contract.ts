@@ -184,13 +184,12 @@ describe("zoomi-smart-contract", () => {
     console.log("  Rider2:", rider2.publicKey.toString());
     console.log("  Shopkeeper:", shopkeeper.publicKey.toString());
     console.log("USDC Balances:");
-    console.log("  Rider1:", (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount);
-    console.log("  Rider2:", (await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount);
-    console.log("  Shopkeeper:", (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount);
+    console.log("  Rider1: $", ((await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount / 1_000_000).toFixed(2));
+    console.log("  Rider2: $", ((await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount / 1_000_000).toFixed(2));
+    console.log("  Shopkeeper: $", ((await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount / 1_000_000).toFixed(2));
   });
 
   xit("Initialize Zoomi", async () => {
-    // Add your test here.
     const tx = await program.methods.initializeZoomi(5, new anchor.BN(10000000), new anchor.BN(100000000))
       .accountsPartial({
         admin: admin.publicKey,
@@ -203,8 +202,13 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([admin])
       .rpc();
-    console.log("\nZoomi Account:", zoomiAccount.toBase58());
-    console.log("Your transaction signature", tx);
+    
+    const zoomiAccountFetched = await program.account.zoomi.fetch(zoomiAccount);
+    console.log("\n:: Zoomi Platform Initialized");
+    console.log("Protocol Settings:");
+    console.log("  Base Rate: $" + (zoomiAccountFetched.baseRate.toNumber() / 1_000_000).toFixed(2));
+    console.log("  Collateral: $" + (zoomiAccountFetched.collateral.toNumber() / 1_000_000).toFixed(2));
+    console.log("  Protocol Fee: " + zoomiAccountFetched.protocolFee + "%");
   });
 
   xit("Register Scooter", async () => {
@@ -216,14 +220,14 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([shopkeeper])
       .rpc();
+    
     const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
-    console.log("\nScooter Account:", scooterAccount.toBase58());
-    console.log(" - Zoomi Device Pubkey:", scooterAccountFetched.zoomiDevicePubkey.toBase58());
-    console.log(" - ID:", scooterAccountFetched.id.toString());
-    console.log(" - Shopkeeper ID:", scooterAccountFetched.shopkeeperId.toString());
-    console.log(" - Hourly Rate:", scooterAccountFetched.hourlyRate.toString());
-    console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
-    console.log("Your transaction signature", tx);
+    console.log("\n:: Scooter Registered");
+    console.log("Scooter Details:");
+    console.log("  ID: #" + scooterAccountFetched.id);
+    console.log("  Shopkeeper ID: " + scooterAccountFetched.shopkeeperId);
+    console.log("  Hourly Rate: $" + (scooterAccountFetched.hourlyRate.toNumber() / 1_000_000).toFixed(2));
+    console.log("  Status: " + getScooterStatus(scooterAccountFetched.status));
   });
 
   xit("Register Rider 1", async () => {
@@ -235,13 +239,9 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([rider1])
       .rpc({skipPreflight: true});
-    const riderAccountFetched = await program.account.rider.fetch(rider1Account);
-    console.log("\nRider Account:", rider1Account.toBase58());
-    console.log(" - ID Status:", riderAccountFetched.idStatus.toString());
-    console.log(" - Is Renting:", riderAccountFetched.isRenting.toString());
-    console.log(" - Points:", riderAccountFetched.points.toString());
-    console.log(" - Penalties:", riderAccountFetched.penalties.toString());
-    console.log("Your transaction signature", tx);
+    
+    console.log("\n:: Rider 1 Registered");
+    console.log("Account Created: " + rider1Account.toBase58().slice(0, 8) + "...");
   });
 
   xit("Register Rider 2", async () => {
@@ -254,17 +254,14 @@ describe("zoomi-smart-contract", () => {
       .signers([rider2])
       .rpc();
     
-    const riderAccountFetched = await program.account.rider.fetch(rider2Account);
-    console.log("\nRider 2 Account:", rider2Account.toBase58());
-    console.log(" - ID Status:", riderAccountFetched.idStatus.toString());
-    console.log(" - Is Renting:", riderAccountFetched.isRenting.toString());
-    console.log(" - Points:", riderAccountFetched.points.toString());
-    console.log(" - Penalties:", riderAccountFetched.penalties.toString());
-    console.log("Your transaction signature", tx);
+    console.log("\n:: Rider 2 Registered");
+    console.log("Account Created: " + rider2Account.toBase58().slice(0, 8) + "...");
   });
 
   xit("Start Rental for Rider 1", async () => {
-    const tx = await program.methods.startRental(3)
+    const balanceBefore = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    
+    const tx = await program.methods.startRental(1)
       .accountsPartial({
         rider: rider1.publicKey,
         riderAccount: rider1Account,
@@ -279,20 +276,25 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([rider1])
       .rpc();
+    
     const rentalAccountFetched = await program.account.rental.fetch(rental1Account);
-    console.log("\nRental Account:", rental1Account.toBase58());
-    console.log(" - Rider:", rentalAccountFetched.rider.toBase58());
-    console.log(" - Scooter ID:", rentalAccountFetched.scooterId.toString());
-    console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
-    console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
-    console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
-    console.log("Vault balance:", (await connection.getTokenAccountBalance(vault1)).value.amount);
-    console.log("Rider 1 balance:", (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount);
-    console.log("Your transaction signature", tx);
+    const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
+    const vaultBalance = (await connection.getTokenAccountBalance(vault1)).value.amount;
+    const balanceAfter = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    
+    console.log("\n:: Rental Started - Rider 1");
+    console.log("Rental Details:");
+    console.log("  Period: " + rentalAccountFetched.rentalPeriod + " hours");
+    console.log("  Rental Amount: $" + (rentalAccountFetched.rentalAmount.toNumber() / 1_000_000).toFixed(2));
+    console.log("  Scooter Status: " + getScooterStatus(scooterAccountFetched.status));
+    console.log("USDC Balances:");
+    console.log("  Rider: $" + (parseInt(balanceAfter) / 1_000_000).toFixed(2) + " (paid: $" + ((parseInt(balanceBefore) - parseInt(balanceAfter)) / 1_000_000).toFixed(2) + ")");
+    console.log("  Vault (Escrow): $" + (parseInt(vaultBalance) / 1_000_000).toFixed(2));
   });
 
   xit("Extend Rental Period for Rider 1", async () => {
+    const balanceBefore = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    
     const tx = await program.methods.extendRentalPeriod(2)
       .accountsPartial({
         rider: rider1.publicKey,
@@ -307,20 +309,21 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([rider1])
       .rpc();
+    
     const rentalAccountFetched = await program.account.rental.fetch(rental1Account);
-    console.log("\nRental Account:", rental1Account.toBase58());
-    console.log(" - Rider:", rentalAccountFetched.rider.toBase58());
-    console.log(" - Scooter ID:", rentalAccountFetched.scooterId.toString());
-    console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
-    console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
-    console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
-    console.log("Vault balance:", (await connection.getTokenAccountBalance(vault1)).value.amount);
-    console.log("Rider 1 balance:", (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount);
-    console.log("Your transaction signature", tx);
+    const vaultBalance = (await connection.getTokenAccountBalance(vault1)).value.amount;
+    const balanceAfter = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    
+    console.log("\n:: Rental Extended - Rider 1");
+    console.log("Updated Details:");
+    console.log("  New Period: " + rentalAccountFetched.rentalPeriod + " hours");
+    console.log("  Total Rental Amount: $" + (rentalAccountFetched.rentalAmount.toNumber() / 1_000_000).toFixed(2));
+    console.log("USDC Balances:");
+    console.log("  Rider: $" + (parseInt(balanceAfter) / 1_000_000).toFixed(2) + " (additional paid: $" + ((parseInt(balanceBefore) - parseInt(balanceAfter)) / 1_000_000).toFixed(2) + ")");
+    console.log("  Vault (Escrow): $" + (parseInt(vaultBalance) / 1_000_000).toFixed(2));
   });
 
-  it("End Rental for Rider 1", async () => {
+  xit("End Rental for Rider 1", async () => {
     const tx = await program.methods.returnScooter()
       .accountsPartial({
         rider: rider1.publicKey,
@@ -336,31 +339,32 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([rider1])
       .rpc();
+    
     const rentalAccountFetched = await program.account.rental.fetch(rental1Account);
-    console.log("\nRental Account:", rental1Account.toBase58());
-    console.log(" - Rider:", rentalAccountFetched.rider.toBase58());
-    console.log(" - Scooter ID:", rentalAccountFetched.scooterId.toString());
-    console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
-    console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
-    console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
     const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
-    console.log("\nScooter Account:", scooterAccount.toBase58());
-    console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
     const riderAccountFetched = await program.account.rider.fetch(rider1Account);
-    console.log("\nRider Account:", rider1Account.toBase58());
-    console.log(" - Is Renting:", riderAccountFetched.isRenting.toString());
-    console.log(" - Points:", riderAccountFetched.points.toString());
-    console.log(" - Penalties:", riderAccountFetched.penalties.toString());
-    console.log("Vault balance:", (await connection.getTokenAccountBalance(vault1)).value.amount);
-    console.log("Rider 1 balance:", (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount);
-    console.log("Shopkeeper balance:", (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount);
-    console.log("Treasury balance:", (await connection.getTokenAccountBalance(treasury)).value.amount);
-    console.log("Your transaction signature", tx);
+    const vaultBalance = (await connection.getTokenAccountBalance(vault1)).value.amount;
+    const riderBalance = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    const shopkeeperBalance = (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount;
+    const treasuryBalance = (await connection.getTokenAccountBalance(treasury)).value.amount;
+    
+    console.log("\n:: Rental Ended - Rider 1");
+    console.log("Rental Status: " + getRentalStatus(rentalAccountFetched.status));
+    console.log("Scooter Status: " + getScooterStatus(scooterAccountFetched.status));
+    console.log("Rider Stats:");
+    console.log("  Points Earned: " + riderAccountFetched.points);
+    console.log("  Penalties: " + riderAccountFetched.penalties);
+    console.log("USDC Balances:");
+    console.log("  Vault (Remaining): $" + (parseInt(vaultBalance) / 1_000_000).toFixed(2));
+    console.log("  Rider: $" + (parseInt(riderBalance) / 1_000_000).toFixed(2));
+    console.log("  Shopkeeper: $" + (parseInt(shopkeeperBalance) / 1_000_000).toFixed(2));
+    console.log("  Treasury (Fees): $" + (parseInt(treasuryBalance) / 1_000_000).toFixed(2));
   });
 
-  xit("Close Rental - Good Condition for Rider 1", async () => {
-    const tx = await program.methods.closeRental(85) // inspection_score: 85 (good condition - full collateral refund)
+  xit("Close Rental for Rider 1 - Scooter is OK (Good Condition)", async () => {
+    const riderBalanceBefore = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    
+    const tx = await program.methods.closeRental(true) // Scooter OK
       .accountsPartial({
         shopkeeper: shopkeeper.publicKey,
         zoomiAccount,
@@ -376,24 +380,36 @@ describe("zoomi-smart-contract", () => {
       })
       .signers([shopkeeper])
       .rpc();
-      console.log("Close Rental - Good Condition for Rider 1");
-      const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
-      console.log("\nScooter Account:", scooterAccount.toBase58());
-      console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
-      const riderAccountFetched = await program.account.rider.fetch(rider1Account);
-      console.log("\nRider Account:", rider1Account.toBase58());
-      console.log(" - Is Renting:", riderAccountFetched.isRenting.toString());
-      console.log(" - Points:", riderAccountFetched.points.toString());
-      console.log(" - Penalties:", riderAccountFetched.penalties.toString());
-      console.log("Rider 1 balance:", (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount);
-      console.log("Shopkeeper balance:", (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount);
-      console.log("Treasury balance:", (await connection.getTokenAccountBalance(treasury)).value.amount);
-
-      console.log("Your transaction signature", tx);
+    
+    const riderBalanceAfter = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
+    const collateralRefunded = (parseInt(riderBalanceAfter) - parseInt(riderBalanceBefore)) / 1_000_000;
+    
+    console.log("\n:: Rental Closed - Scooter OK");
+    console.log("Inspection Result: Good Condition");
+    console.log("Collateral Refunded: $" + collateralRefunded.toFixed(2));
+    console.log("Final USDC Balances:");
+    console.log("  Rider: $" + (parseInt(riderBalanceAfter) / 1_000_000).toFixed(2));
+    console.log("  Shopkeeper: $" + ((await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount / 1_000_000).toFixed(2));
+    console.log("  Treasury: $" + ((await connection.getTokenAccountBalance(treasury)).value.amount / 1_000_000).toFixed(2));
   });
 
-  xit("Start Rental for Rider 2", async () => {
-    const tx = await program.methods.startRental(3)
+  it("Set Scooter Status to Available", async () => {
+    const scooterStatus = {available: {}};
+    const tx = await program.methods.setScooterStatus(scooterStatus)
+      .accountsPartial({
+        shopkeeper: shopkeeper.publicKey,
+        scooterAccount,
+      })
+      .signers([shopkeeper])
+      .rpc();
+    
+    console.log("\n:: Scooter Status Updated: Available");
+  });
+
+  it("Start Rental for Rider 2", async () => {
+    const balanceBefore = (await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount;
+    
+    const tx = await program.methods.startRental(5)
       .accountsPartial({
         rider: rider2.publicKey,
         riderAccount: rider2Account,
@@ -401,60 +417,97 @@ describe("zoomi-smart-contract", () => {
         rentalAccount: rental2Account,
         zoomiAccount,
         mintUsdc,
-        vault: vault1,
+        vault: vault2,
         tokenProgram,
         associatedTokenProgram,
         systemProgram: SystemProgram.programId,
       })
       .signers([rider2])
       .rpc();
+
     const rentalAccountFetched = await program.account.rental.fetch(rental2Account);
-    console.log("\nRental Account:", rental2Account.toBase58());
-    console.log(" - Rider:", rentalAccountFetched.rider.toBase58());
-    console.log(" - Scooter ID:", rentalAccountFetched.scooterId.toString());
-    console.log(" - Start Time:", rentalAccountFetched.startTime.toString());
-    console.log(" - Rental Period:", rentalAccountFetched.rentalPeriod.toString());
-    console.log(" - Total Amount:", rentalAccountFetched.totalAmount.toString());
-    console.log(" - Status:", getRentalStatus(rentalAccountFetched.status));
-    console.log("Vault balance:", (await connection.getTokenAccountBalance(vault1)).value.amount);
-    console.log("Rider 2 balance:", (await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount);
-    console.log("Your transaction signature", tx);
+    const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
+    const vaultBalance = (await connection.getTokenAccountBalance(vault2)).value.amount;
+    const balanceAfter = (await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount;
+    
+    console.log("\n:: Rental Started - Rider 2");
+    console.log("Rental Details:");
+    console.log("  Period: " + rentalAccountFetched.rentalPeriod + " hours");
+    console.log("  Rental Amount: $" + (rentalAccountFetched.rentalAmount.toNumber() / 1_000_000).toFixed(2));
+    console.log("  Scooter Status: " + getScooterStatus(scooterAccountFetched.status));
+    console.log("USDC Balances:");
+    console.log("  Rider: $" + (parseInt(balanceAfter) / 1_000_000).toFixed(2) + " (paid: $" + ((parseInt(balanceBefore) - parseInt(balanceAfter)) / 1_000_000).toFixed(2) + ")");
+    console.log("  Vault (Escrow): $" + (parseInt(vaultBalance) / 1_000_000).toFixed(2));
   });
 
-  xit("Close Rental - Poor Condition", async () => {
-    // This test shows what happens when scooter is returned in poor condition
-    const tx = await program.methods.closeRental(30) // inspection_score: 30 (poor condition - no collateral refund)
+  it("End Rental for Rider 2", async () => {
+    const tx = await program.methods.returnScooter()
+      .accountsPartial({
+        rider: rider2.publicKey,
+        riderAccount: rider2Account,
+        scooterAccount,
+        rentalAccount: rental2Account,
+        shopkeeper: shopkeeper.publicKey,
+        zoomiAccount,
+        mintUsdc,
+        vault: vault2,
+        treasury,
+        tokenProgram,
+      })
+      .signers([rider2])
+      .rpc();
+    
+    const rentalAccountFetched = await program.account.rental.fetch(rental2Account);
+    const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
+    const riderAccountFetched = await program.account.rider.fetch(rider2Account);
+    const vaultBalance = (await connection.getTokenAccountBalance(vault2)).value.amount;
+    const riderBalance = (await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount;
+    const shopkeeperBalance = (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount;
+    const treasuryBalance = (await connection.getTokenAccountBalance(treasury)).value.amount;
+    
+    console.log("\n:: Rental Ended - Rider 2");
+    console.log("Rental Status: " + getRentalStatus(rentalAccountFetched.status));
+    console.log("Scooter Status: " + getScooterStatus(scooterAccountFetched.status));
+    console.log("Rider Stats:");
+    console.log("  Points Earned: " + riderAccountFetched.points);
+    console.log("  Penalties: " + riderAccountFetched.penalties);
+    console.log("USDC Balances:");
+    console.log("  Vault (Remaining): $" + (parseInt(vaultBalance) / 1_000_000).toFixed(2));
+    console.log("  Rider: $" + (parseInt(riderBalance) / 1_000_000).toFixed(2));
+    console.log("  Shopkeeper: $" + (parseInt(shopkeeperBalance) / 1_000_000).toFixed(2));
+    console.log("  Treasury (Fees): $" + (parseInt(treasuryBalance) / 1_000_000).toFixed(2));
+  });
+
+  it("Close Rental for Rider 2 - Scooter is not OK (Bad Condition)", async () => {
+    const shopkeeperBalanceBefore = (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount;
+    
+    const tx = await program.methods.closeRental(false) // Scooter NOT OK
       .accountsPartial({
         shopkeeper: shopkeeper.publicKey,
-        shopkeeperAta: shopkeeperUsdcAccount,
         zoomiAccount,
         scooterAccount,
-        riderAccount: rider1Account,
-        rider: rider1.publicKey,
-        riderAta: rider1UsdcAccount,
-        rentalAccount: rental1Account,
+        riderAccount: rider2Account,
+        rider: rider2.publicKey,
+        rentalAccount: rental2Account,
         mintUsdc,
-        vault: vault1,
+        vault: vault2,
         treasury,
         tokenProgram,
         systemProgram: SystemProgram.programId,
       })
       .signers([shopkeeper])
       .rpc();
-
-      console.log("Close Rental with poor inspection score (30) - collateral goes to shopkeeper");
-      const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
-      console.log("\nScooter Account:", scooterAccount.toBase58());
-      console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
-      const riderAccountFetched = await program.account.rider.fetch(rider1Account);
-      console.log("\nRider Account:", rider1Account.toBase58());
-      console.log(" - Is Renting:", riderAccountFetched.isRenting.toString());
-      console.log(" - Points:", riderAccountFetched.points.toString());
-      console.log(" - Penalties:", riderAccountFetched.penalties.toString());
-      console.log("Rider 1 balance:", (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount);
-      console.log("Shopkeeper balance:", (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount);
-      console.log("Treasury balance:", (await connection.getTokenAccountBalance(treasury)).value.amount);
-      console.log("Your transaction signature", tx);
+    
+    const shopkeeperBalanceAfter = (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount;
+    const collateralToShopkeeper = (parseInt(shopkeeperBalanceAfter) - parseInt(shopkeeperBalanceBefore)) / 1_000_000;
+    
+    console.log("\n:: Rental Closed - Scooter Damaged");
+    console.log("Inspection Result: Bad Condition");
+    console.log("Collateral Forfeited to Shopkeeper: $" + collateralToShopkeeper.toFixed(2));
+    console.log("Final USDC Balances:");
+    console.log("  Rider: $" + ((await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount / 1_000_000).toFixed(2));
+    console.log("  Shopkeeper: $" + (parseInt(shopkeeperBalanceAfter) / 1_000_000).toFixed(2));
+    console.log("  Treasury: $" + ((await connection.getTokenAccountBalance(treasury)).value.amount / 1_000_000).toFixed(2));
   });
 
   xit("Close Rental - Test", async () => {
@@ -497,10 +550,10 @@ describe("zoomi-smart-contract", () => {
       .signers([shopkeeper])
       .rpc();
 
-      const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
-      console.log("\nScooter Account:", scooterAccount.toBase58());
-      console.log(" - Location: ", scooterAccountFetched.locationLat.toString(), scooterAccountFetched.locationLong.toString());
-      console.log(" - Status:", getScooterStatus(scooterAccountFetched.status));
+    const scooterAccountFetched = await program.account.scooter.fetch(scooterAccount);
+    console.log("\n:: Scooter Location Updated");
+    console.log("New Coordinates: (" + scooterAccountFetched.locationLat + ", " + scooterAccountFetched.locationLong + ")");
+    console.log("Status: " + getScooterStatus(scooterAccountFetched.status));
   });
 
 });

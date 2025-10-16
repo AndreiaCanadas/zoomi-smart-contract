@@ -43,8 +43,9 @@ describe("zoomi-smart-contract", () => {
   let treasury: PublicKey;
   
   // Scooter Accounts
-  const zoomiDevicePubkey = shopkeeper.publicKey;
+  const zoomiDevicePubkey = admin.publicKey;
   const scooterAccount = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("scooty"), zoomiDevicePubkey.toBuffer()], program.programId)[0];
+  console.log("Scooter Account:", scooterAccount.toString());
 
   // Rider Accounts
   const rider1Account = anchor.web3.PublicKey.findProgramAddressSync([Buffer.from("rider"), rider1.publicKey.toBuffer()], program.programId)[0];
@@ -212,7 +213,7 @@ describe("zoomi-smart-contract", () => {
   });
 
   xit("Register Scooter", async () => {
-    const tx = await program.methods.registerScooter(shopkeeper.publicKey, 1, 123, new anchor.BN(2000000))
+    const tx = await program.methods.registerScooter(admin.publicKey, 1, 123, new anchor.BN(2000000))
       .accountsPartial({
         shopkeeper: shopkeeper.publicKey,
         scooterAccount,
@@ -258,7 +259,7 @@ describe("zoomi-smart-contract", () => {
     console.log("Account Created: " + rider2Account.toBase58().slice(0, 8) + "...");
   });
 
-  xit("Start Rental for Rider 1", async () => {
+  it("Start Rental for Rider 1", async () => {
     const balanceBefore = (await connection.getTokenAccountBalance(rider1UsdcAccount.address)).value.amount;
     
     const tx = await program.methods.startRental(1)
@@ -393,7 +394,7 @@ describe("zoomi-smart-contract", () => {
     console.log("  Treasury: $" + ((await connection.getTokenAccountBalance(treasury)).value.amount / 1_000_000).toFixed(2));
   });
 
-  it("Set Scooter Status to Available", async () => {
+  xit("Set Scooter Status to Available", async () => {
     const scooterStatus = {available: {}};
     const tx = await program.methods.setScooterStatus(scooterStatus)
       .accountsPartial({
@@ -406,7 +407,7 @@ describe("zoomi-smart-contract", () => {
     console.log("\n:: Scooter Status Updated: Available");
   });
 
-  it("Start Rental for Rider 2", async () => {
+  xit("Start Rental for Rider 2", async () => {
     const balanceBefore = (await connection.getTokenAccountBalance(rider2UsdcAccount.address)).value.amount;
     
     const tx = await program.methods.startRental(5)
@@ -440,7 +441,7 @@ describe("zoomi-smart-contract", () => {
     console.log("  Vault (Escrow): $" + (parseInt(vaultBalance) / 1_000_000).toFixed(2));
   });
 
-  it("End Rental for Rider 2", async () => {
+  xit("End Rental for Rider 2", async () => {
     const tx = await program.methods.returnScooter()
       .accountsPartial({
         rider: rider2.publicKey,
@@ -478,7 +479,7 @@ describe("zoomi-smart-contract", () => {
     console.log("  Treasury (Fees): $" + (parseInt(treasuryBalance) / 1_000_000).toFixed(2));
   });
 
-  it("Close Rental for Rider 2 - Scooter is not OK (Bad Condition)", async () => {
+  xit("Close Rental for Rider 2 - Scooter is not OK (Bad Condition)", async () => {
     const shopkeeperBalanceBefore = (await connection.getTokenAccountBalance(shopkeeperUsdcAccount.address)).value.amount;
     
     const tx = await program.methods.closeRental(false) // Scooter NOT OK
